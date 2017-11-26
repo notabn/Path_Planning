@@ -68,12 +68,13 @@ float collision_cost(Vehicle vehicle, vector<Vehicle> trajectory, map<int, vecto
     */
     float nearest = vehicle.get_nearest_distance(trajectory,predictions);
     //cout<<" nearest "<<nearest<<endl;
-    if (nearest < 2*VEHICLE_RADIUS){
-       return 1.0;
+    if (nearest < 20){
         cout<<"<!!!!!!!!!! collision"<<endl;
+        return 1.0;
     }else{
         return 0.0;
     }
+    
 }
 float buffer_cost(Vehicle vehicle, vector<Vehicle> trajectory, map<int, vector<Vehicle>> predictions, map<string, float> data){
     /*
@@ -97,7 +98,7 @@ float goal_distance_cost(Vehicle vehicle, vector<Vehicle> trajectory, map<int, v
     float cost;
     float distance = data["distance_to_goal"];
     if (distance > 0) {
-        cost = 1 - 2*exp(-(2*trajectory[0].lane - data["intended_lane"] - data["final_lane"]) / distance);
+        cost = 1 - 2*exp(-(trajectory[1].lane +trajectory[0].lane - data["intended_lane"] - data["final_lane"]) / distance);
     } else {
         cost = 1;
     }
@@ -156,7 +157,7 @@ float calculate_cost(Vehicle vehicle, map<int, vector<Vehicle>> predictions, vec
     float cost = 0.0;
     
     //Add additional cost functions here.
-    vector< function<float(Vehicle, vector<Vehicle>, map<int, vector<Vehicle>>, map<string, float>)>> cf_list = {inefficiency_cost,goal_distance_cost,collision_cost,buffer_cost,max_accel_cost,max_jerk_cost    };
+    vector< function<float(Vehicle, vector<Vehicle>, map<int, vector<Vehicle>>, map<string, float>)>> cf_list = {inefficiency_cost,goal_distance_cost,collision_cost,buffer_cost,max_accel_cost,max_jerk_cost};
     vector<float> weight_list = {EFFICIENCY,REACH_GOAL,COLLISION,BUFFER,ACC,JERK};
     
     for (int i = 0; i < cf_list.size(); i++) {
