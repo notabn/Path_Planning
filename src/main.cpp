@@ -5,10 +5,13 @@
 #include <iostream>
 #include <thread>
 #include <vector>
+#include <map>
 #include "Eigen-3.3/Eigen/Core"
 #include "Eigen-3.3/Eigen/QR"
 #include "json.hpp"
 #include "spline.h"
+#include "vehicle.hpp"
+
 
 using namespace std;
 
@@ -175,10 +178,14 @@ int main() {
     string map_file_ = "../data/highway_map.csv";
     // The max s value before wrapping around the track back to 0
     double max_s = 6945.554;
+    float max_acc = 10;
     double dt = .02; //s
     double ref_vel = 0.0; //mph
     int lane = 1;
     
+    
+    Vehicle ego = Vehicle(lane, 0, 0, 0);
+    ego.configure(max_s, max_acc,0);
     
     
     ifstream in_map_(map_file_.c_str(), ifstream::in);
@@ -203,7 +210,7 @@ int main() {
         map_waypoints_dy.push_back(d_y);
     }
     
-    h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy,&dt,&lane,&ref_vel](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
+    h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy,&dt,&lane,&ref_vel,&ego](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                                                                                                                             uWS::OpCode opCode) {
         // "42" at the start of the message means there's a websocket message event.
         // The 4 signifies a websocket message
@@ -230,6 +237,8 @@ int main() {
                     double car_yaw = j[1]["yaw"];
                     double car_speed = j[1]["speed"];
                     
+                    ego.s = car_s;
+                    ego.v = car_speed/2.24; // [m/s]
                     // Previous path data given to the Planner
                     auto previous_path_x = j[1]["previous_path_x"];
                     auto previous_path_y = j[1]["previous_path_y"];
@@ -239,8 +248,6 @@ int main() {
                     
                     // Sensor Fusion Data, a list of all other cars on the same side of the road.
                     auto sensor_fusion = j[1]["sensor_fusion"];
-                    
-                    
                     
                     json msgJson;
                     
@@ -252,13 +259,16 @@ int main() {
                     
                     bool too_close = false;
                     
+                    map<int,vector<Vehicle>> predictions;
+                    
                     for(int i = 0; i < sensor_fusion.size();i++){
+                        
                         float d = sensor_fusion[i][6];
+                        double vx = sensor_fusion[i][3];
+                        double vy = sensor_fusion[i][4];
+                        double check_speed = sqrt(vx*vx+vy*vy);
+                        double check_car_s = sensor_fusion[i][5];
                         if ( (d < 2+ 4*lane +2) && ( d > 2+ 4*lane-2)){
-                            double vx = sensor_fusion[i][3];
-                            double vy = sensor_fusion[i][4];
-                            double check_speed = sqrt(vx*vx+vy*vy);
-                            double check_car_s = sensor_fusion[i][5];
                             check_car_s += (double)prev_size*dt*check_speed;
                             
                             // check s value greater than mine and s gap
@@ -266,21 +276,37 @@ int main() {
                                 // decrease velocity, maybe change lane
                                 //ref_vel = 29.5;
                                 too_close = true;
-                                if(lane > 0){
-                                    lane = 0;
-                                }
                             }
                         }
+                        int id = sensor_fusion[i][0];
+                        int check_lane = floor(d/4);
+                        //cout<<"car id "<<id<<" lane "<<check_lane<<" speed "<<check_speed<<endl;
+                        Vehicle car_on_road = Vehicle(check_lane, sensor_fusion[i][5], check_speed/2.24, 0);
+                        car_on_road.configure(6945.554, 10,check_lane);
+                        vector<Vehicle> predicted_trajectories = car_on_road.generate_predictions();
+                        predictions[id] = predicted_trajectories;
+
                     }
-                    
-                    
-                    if (too_close){
-                        ref_vel -= .224;
+                    // ego predictions
+                    //predictions[-1] = ego.generate_predictions();
+                    std::map<int,vector<Vehicle>>::iterator it = predictions.begin();
+                    while(it != predictions.end()){
+                        //cout<<"Car id "<<it->first<<endl;
+                        for(int j=0; j<it->second.size();j++){
+                            //cout<<"Vel "<<it->second[j].v<<endl;
+                        }
+                        it++;
                     }
-                    else if(ref_vel < 49.5){
-                        ref_vel += .224;
-                    }
-                    
+
+                    //cout<<"now lane "<<ego.lane<<endl;
+                    vector<Vehicle> trajectory =  ego.choose_next_state(predictions);
+                    ego.realize_next_state(trajectory);
+                    //cout<<"next state "<<ego.state<<endl;
+                    cout<<"-----------------"<<endl;
+                    cout<<"next state "<<ego.state<<endl;
+                    cout<<"next lane "<<ego.lane<<endl;
+                    // set the predicted lane as from fsm
+                    lane = ego.lane;
                     
                     vector<double> next_x_vals;
                     vector<double> next_y_vals;
@@ -375,6 +401,13 @@ int main() {
                     double x_add_on = 0;
                     
                     for( int i = 0; i< 50 - previous_path_x.size();i++){
+                        if (too_close){
+                            ref_vel -= .224;
+                        }
+                        else if(ref_vel < 49.5){
+                            ref_vel += .224;
+                        }
+                        
                         // d = v*dt*N
                         double N = (target_dist/(dt * ref_vel/2.24));
                         double x_point = x_add_on + (target_x/N);
@@ -399,22 +432,6 @@ int main() {
                         next_y_vals.push_back(y_point);
                     }
                     
-                    /*
-                     
-                     // TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
-                     double dist_inc = 0.5;
-                     for(int i = 0; i < 50; i++)
-                     {
-                     double next_car_s = car_s + (i+1) * dist_inc;
-                     double next_car_d = 6;
-                     
-                     vector<double> xy = getXY(next_car_s, next_car_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-                     next_x_vals.push_back(xy[0]);
-                     next_y_vals.push_back(xy[1]);
-                     //next_x_vals.push_back(car_x+(dist_inc*i)*cos(deg2rad(car_yaw)));
-                     //next_y_vals.push_back(car_y+(dist_inc*i)*sin(deg2rad(car_yaw)));
-                     }
-                     */
                     
                     msgJson["next_x"] = next_x_vals;
                     msgJson["next_y"] = next_y_vals;

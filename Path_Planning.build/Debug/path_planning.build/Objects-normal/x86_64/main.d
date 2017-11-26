@@ -176,4 +176,5 @@ dependencies: \
   /Users/emilbalcu/Courses/Udacity/NanodegreeSDC/Term_3/Path_Planning/src/Eigen-3.3/Eigen/src/QR/ColPivHouseholderQR.h \
   /Users/emilbalcu/Courses/Udacity/NanodegreeSDC/Term_3/Path_Planning/src/Eigen-3.3/Eigen/src/QR/CompleteOrthogonalDecomposition.h \
   /Users/emilbalcu/Courses/Udacity/NanodegreeSDC/Term_3/Path_Planning/src/json.hpp \
-  /Users/emilbalcu/Courses/Udacity/NanodegreeSDC/Term_3/Path_Planning/src/spline.h
+  /Users/emilbalcu/Courses/Udacity/NanodegreeSDC/Term_3/Path_Planning/src/spline.h \
+  /Users/emilbalcu/Courses/Udacity/NanodegreeSDC/Term_3/Path_Planning/src/vehicle.hpp
