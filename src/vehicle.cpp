@@ -19,7 +19,7 @@
  * Initializes Vehicle
  */
 
-float dt = 0.02;
+
 
 Vehicle::Vehicle(){}
 
@@ -79,8 +79,6 @@ vector<Vehicle> Vehicle::choose_next_state(map<int, vector<Vehicle>> predictions
     
     vector<float>::iterator best_cost = min_element(begin(costs), end(costs));
     int best_idx = distance(begin(costs), best_cost);
-    cout<<"best state is"<<states[best_idx]<<endl;
-    cout<<"best cost is "<<cost<<endl;
     return final_trajectories[best_idx];
     
 }
@@ -341,13 +339,15 @@ float Vehicle::get_nearest_distance(vector<Vehicle> trajectory,map<int, vector<V
     Vehicle temp_vehicle;
     for (map<int, vector<Vehicle>>::iterator it = predictions.begin(); it != predictions.end(); ++it) {
         temp_vehicle = it->second[0];
-        float ds = trajectory[1].s - temp_vehicle.s;
-        if(ds < min_dist){
-            min_dist = ds;
+        float ds = abs(trajectory[1].s - temp_vehicle.s);
+        float dd = abs(trajectory[1].lane - temp_vehicle.lane)*4;
+        float dist = sqrt(ds*ds-dd*dd);
+        if(dist < min_dist){
+            min_dist = dist;
         }
-
         
     }
+    cout<<" dist is"<<min_dist;
     return min_dist;
     
 }

@@ -289,19 +289,8 @@ int main() {
                     }
                     // ego predictions
                     //predictions[-1] = ego.generate_predictions();
-                    std::map<int,vector<Vehicle>>::iterator it = predictions.begin();
-                    while(it != predictions.end()){
-                        //cout<<"Car id "<<it->first<<endl;
-                        for(int j=0; j<it->second.size();j++){
-                            //cout<<"Vel "<<it->second[j].v<<endl;
-                        }
-                        it++;
-                    }
-
-                    //cout<<"now lane "<<ego.lane<<endl;
                     vector<Vehicle> trajectory =  ego.choose_next_state(predictions);
                     ego.realize_next_state(trajectory);
-                    //cout<<"next state "<<ego.state<<endl;
                     cout<<"-----------------"<<endl;
                     cout<<"next state "<<ego.state<<endl;
                     cout<<"next lane "<<ego.lane<<endl;

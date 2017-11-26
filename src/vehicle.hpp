@@ -57,6 +57,12 @@ public:
     
     int goal_s;
     
+    int MAX_ACCEL = 10;
+    
+    int MAX_JERK = 10;
+    
+    float dt = 0.02;
+    
     string state;
     
     /**
@@ -101,6 +107,9 @@ public:
     void configure(int s,float max_acc, int lane);
     
     float get_nearest_distance(vector<Vehicle> trajectory,map<int, vector<Vehicle>> predictions);
+    float max_accel_cost(Vehicle vehicle, vector<Vehicle> trajectory, map<int, vector<Vehicle>> predictions, map<string, float> data);
+    
+    float max_jerk_cost(Vehicle vehicle, vector<Vehicle> trajectory, map<int, vector<Vehicle>> predictions, map<string, float> data);
     
 };
 
