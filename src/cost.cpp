@@ -15,13 +15,14 @@
 
 
 //TODO: change weights for cost functions.
-const float REACH_GOAL = pow(10,3);
-const float EFFICIENCY = pow(10,6);
+const float REACH_GOAL = 5*pow(10,5);
+const float EFFICIENCY = pow(10,5);
 const float COLLISION = pow(10,7);
 const float VEHICLE_RADIUS = 1.5;
 const float BUFFER =  0;
-const float JERK =  0;
+const float JERK =   pow(10,7);
 const float ACC =  0;
+const int COLLISION_BUFFER = 50;
 
 /*
  Here we have provided two possible suggestions for cost functions, but feel free to use your own!
@@ -33,7 +34,7 @@ float logistic(float x){
     /*
      A function that returns a value between 0 and 1 for x in the
      range [0, infinity] and -1 to 1 for x in the range [-infinity, infinity].
-     Useful for cost functions.
+     Useful for cost functions.f
      */
     
     return 2.0 / (1 + exp(-x)) - 1.0;
@@ -41,8 +42,8 @@ float logistic(float x){
 }
 
 float max_accel_cost(Vehicle vehicle, vector<Vehicle> trajectory, map<int, vector<Vehicle>> predictions, map<string, float> data){
-    int a = trajectory[1].a;
-    if (abs(a) > vehicle.MAX_ACCEL){
+    float a = trajectory[1].a;
+    if (abs(a) >= vehicle.max_acceleration){
         return 1.0;
     }else{
         return 0.0;
@@ -50,11 +51,15 @@ float max_accel_cost(Vehicle vehicle, vector<Vehicle> trajectory, map<int, vecto
 }
 
 float max_jerk_cost(Vehicle vehicle, vector<Vehicle> trajectory, map<int, vector<Vehicle>> predictions, map<string, float> data){
+    int l = trajectory.size();
 
-    float max_jerk = (trajectory[1].a-trajectory[0].a)/trajectory[0].dt;
+    double max_jerk = (trajectory[1].a- vehicle.a)/vehicle.dt;
+    cout <<"jerk is "<<max_jerk<<endl;
     
-    if (max_jerk > vehicle.MAX_JERK){
+    if (max_jerk >= vehicle.MAX_JERK){
+        cout<<"!!!! max jerk"<<endl;
         return 1.0;
+        
     }else{
         return 0.0;
     }
@@ -66,9 +71,8 @@ float collision_cost(Vehicle vehicle, vector<Vehicle> trajectory, map<int, vecto
     /*
     Binary cost function which penalizes collisions.
     */
-    float nearest = vehicle.get_nearest_distance(trajectory,predictions);
-    //cout<<" nearest "<<nearest<<endl;
-    if (nearest < 20){
+    float nearest = get_nearest_distance(trajectory,predictions);
+    if (nearest < COLLISION_BUFFER){
         cout<<"<!!!!!!!!!! collision"<<endl;
         return 1.0;
     }else{
@@ -80,7 +84,7 @@ float buffer_cost(Vehicle vehicle, vector<Vehicle> trajectory, map<int, vector<V
     /*
     Penalizes getting close to other vehicles.
     */
-    float nearest = vehicle.get_nearest_distance(trajectory,predictions);
+    float nearest = get_nearest_distance(trajectory,predictions);
     //cout<<"nearest "<<nearest<<endl;
     return logistic(2*VEHICLE_RADIUS / nearest);
     
@@ -116,13 +120,13 @@ float inefficiency_cost(Vehicle vehicle, vector<Vehicle> trajectory, map<int, ve
     float proposed_speed_intended = lane_speed(predictions, data["intended_lane"]);
     
     //cout<<"speed_intended "<<proposed_speed_intended<<endl;
-    if (proposed_speed_intended <0){
+    if (proposed_speed_intended <=0){
          proposed_speed_intended = vehicle.target_speed;
     }
     
     float proposed_speed_final = lane_speed(predictions,data["final_lane"]);
     //cout<<"speed_final "<<proposed_speed_final<<endl;
-    if (proposed_speed_final <0){
+    if (proposed_speed_final <=0){
         proposed_speed_final = vehicle.target_speed;
     }
    
@@ -153,6 +157,7 @@ float calculate_cost(Vehicle vehicle, map<int, vector<Vehicle>> predictions, vec
     /*
      Sum weighted cost functions to get total cost for trajectory.
      */
+
     map<string, float> trajectory_data = get_helper_data(vehicle, trajectory, predictions);
     float cost = 0.0;
     
@@ -202,4 +207,19 @@ map<string, float> get_helper_data(Vehicle vehicle, vector<Vehicle> trajectory, 
     return trajectory_data;
 }
 
+float get_nearest_distance(vector<Vehicle> trajectory,map<int, vector<Vehicle>> predictions){
+    float min_dist = pow(10,5);
+    Vehicle temp_vehicle;
+    for (map<int, vector<Vehicle>>::iterator it = predictions.begin(); it != predictions.end(); ++it) {
+        temp_vehicle = it->second[0];
+        if (temp_vehicle.lane == trajectory[1].lane){
+            float dist = abs(trajectory[1].s - temp_vehicle.s);
+            if(dist < min_dist){
+                min_dist = dist;
+            }
 
+        }
+    }
+    return min_dist;
+    
+}

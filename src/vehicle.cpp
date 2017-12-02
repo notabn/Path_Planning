@@ -15,6 +15,7 @@
 #include <iterator>
 #include "cost.hpp"
 
+
 /**
  * Initializes Vehicle
  */
@@ -68,12 +69,15 @@ vector<Vehicle> Vehicle::choose_next_state(map<int, vector<Vehicle>> predictions
     
     for (vector<string>::iterator it = states.begin(); it != states.end(); ++it) {
         cout<<"state "<<*it<<endl;
-        vector<Vehicle> trajectory = generate_trajectory(*it, predictions);
-        if (trajectory.size() != 0) {
-            cost = calculate_cost(*this, predictions, trajectory);
-            cout<<"cost is "<<cost<<endl;
+        vector<Vehicle> state_trajectory = generate_trajectory(*it, predictions);
+        //cout<<"state trajectory "<<endl;
+        cout<<"acc "<<state_trajectory[1].a<<endl;
+        cout<<"v "<<state_trajectory[1].v<<endl;
+        if (state_trajectory.size() != 0) {
+            cost = calculate_cost(*this, predictions, state_trajectory);
+            //cout<<"cost is "<<cost<<endl;
             costs.push_back(cost);
-            final_trajectories.push_back(trajectory);
+            final_trajectories.push_back(state_trajectory);
         }
     }
     
@@ -147,16 +151,21 @@ vector<float> Vehicle::get_kinematics(map<int, vector<Vehicle>> predictions, int
     if (get_vehicle_ahead(predictions, lane, vehicle_ahead)) {
         if (get_vehicle_behind(predictions, lane, vehicle_behind)) {
             new_velocity = vehicle_ahead.v; //must travel at the speed of traffic, regardless of preferred buffer
+            cout << "addapt velocity to  "<<new_velocity<<endl;
         } else {
-            float max_velocity_in_front = (vehicle_ahead.s - this->s - this->preferred_buffer)/dt + vehicle_ahead.v -( 0.5 * this->a*dt);
+            float max_velocity_in_front = (vehicle_ahead.s - this->s - this->preferred_buffer)/dt + vehicle_ahead.v - 0.5 * (this->a)*dt;
             new_velocity = min(min(max_velocity_in_front, max_velocity_accel_limit), this->target_speed);
+            cout << "vel ahead "<<new_velocity<<endl;
         }
     } else {
         new_velocity = min(max_velocity_accel_limit, this->target_speed);
+       
     }
-    
-    new_accel = (new_velocity - this->v)/dt; //Equation: (v_1 - v_0)/t = acceleration
-    new_position = this->s + (new_velocity + new_accel*dt / 2.0)*dt;
+    cout << "this v"<<this->v<<endl;
+    cout << "new vel "<<new_velocity<<endl;
+    new_accel = min((new_velocity - this->v)/dt,this->max_acceleration); //Equation: (v_1 - v_0)/t = acceleration
+    cout << "new acc "<<new_accel<<endl;
+    new_position = this->s + (new_velocity*dt + new_accel*dt*dt/2.0);
     return{new_position, new_velocity, new_accel};
     
 }
@@ -243,8 +252,8 @@ vector<Vehicle> Vehicle::lane_change_trajectory(string state, map<int, vector<Ve
     return trajectory;
 }
 
-void Vehicle::increment(int dt = 1) {
-    this->s = position_at(dt);
+void Vehicle::increment(int t = 1) {
+    this->s = position_at(t);
 }
 
 float Vehicle::position_at(int t) {
@@ -296,14 +305,18 @@ vector<Vehicle> Vehicle::generate_predictions(int horizon) {
      in trajectory generation for the ego vehicle.
      */
     vector<Vehicle> predictions;
+    float prev_v = this->v;
+    float next_v = 0;
+    float next_a = 0;
     for(int i = 0; i < horizon; i++) {
         float next_s = position_at(i);
-        float next_v = 0;
+        prev_v = next_v;
         if (i < horizon-1) {
             float pos_next = position_at(i+1) ;
-            next_v = pos_next - s;
+            next_v = (pos_next - next_s)/dt + next_a*dt;
+            next_v = min(next_v,this->target_speed);
+            next_a = min((next_v-prev_v)/dt,this->max_acceleration);
         }
-        float next_a = (this->v - next_v)/dt;
         predictions.push_back(Vehicle(this->lane, next_s, next_v, next_a));
     }
     return predictions;
@@ -320,6 +333,9 @@ void Vehicle::realize_next_state(vector<Vehicle> trajectory) {
     this->s = next_state.s;
     this->v = next_state.v;
     this->a = next_state.a;
+    cout<<"next s "<<next_state.s<<endl;
+    cout<<"next v "<<next_state.v<<endl;
+    cout<<"next a "<<next_state.a<<endl;
 }
 
 void Vehicle::configure(int s,float max_acc,int lane) {
@@ -331,23 +347,6 @@ void Vehicle::configure(int s,float max_acc,int lane) {
     lanes_available = 3;
     goal_s = s;
     goal_lane = lane;
-    max_acceleration = max_acc;
+    max_acceleration = max_acc-1;
 }
 
-float Vehicle::get_nearest_distance(vector<Vehicle> trajectory,map<int, vector<Vehicle>> predictions){
-    float min_dist = pow(10,5);
-    Vehicle temp_vehicle;
-    for (map<int, vector<Vehicle>>::iterator it = predictions.begin(); it != predictions.end(); ++it) {
-        temp_vehicle = it->second[0];
-        float ds = abs(trajectory[1].s - temp_vehicle.s);
-        float dd = abs(trajectory[1].lane - temp_vehicle.lane)*4;
-        float dist = sqrt(ds*ds-dd*dd);
-        if(dist < min_dist){
-            min_dist = dist;
-        }
-        
-    }
-    cout<<" dist is"<<min_dist;
-    return min_dist;
-    
-}

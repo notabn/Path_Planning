@@ -31,4 +31,6 @@ float buffer_cost(Vehicle vehicle, vector<Vehicle> trajectory, map<int, vector<V
 
 float logistic(float x);
 
+float get_nearest_distance(vector<Vehicle> trajectory,map<int, vector<Vehicle>> predictions);
+
 #endif /* cost_hpp */
