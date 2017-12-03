@@ -163,7 +163,7 @@ vector<double> Vehicle::get_kinematics(map<int, vector<Vehicle>> predictions, in
        
     }
     //cout << "this v"<<this->v<<endl;
-    cout << "new vel "<<new_velocity<<endl;
+    //cout << "new vel "<<new_velocity<<endl;
     new_accel = min((new_velocity - this->v)/dt,this->max_acceleration); //Equation: (v_1 - v_0)/t = acceleration
     //cout << "new acc "<<new_accel<<endl;
     new_position = this->s + (new_velocity*this->dt + new_accel*this->dt*this->dt/2.0);

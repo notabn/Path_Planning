@@ -141,7 +141,7 @@ double lane_speed(map<int, vector<Vehicle>> predictions, int lane, double s) {
     /*
      Get the speed to the nearest
      */
-    double s_min = pow(10,5);
+    double ds_min = pow(10,5);
     double vel = -1.0;
     
     for (map<int, vector<Vehicle>>::iterator it = predictions.begin(); it != predictions.end(); ++it) {
@@ -149,8 +149,9 @@ double lane_speed(map<int, vector<Vehicle>> predictions, int lane, double s) {
         Vehicle vehicle = it->second[0];
         if (vehicle.lane == lane && key != -1 ) {
             //cout<<"id "<<key<<"lane "<<vehicle.lane<<" speed "<<vehicle.v<<endl;
-            if (vehicle.s < s_min){
-                s_min = vehicle.s;
+            double delta = abs(vehicle.s-s);
+            if (delta < ds_min){
+                ds_min = vehicle.s;
                 vel = vehicle.v;
             }
             

@@ -304,7 +304,7 @@ int main() {
                     //parameters
                     int horizon = 30;
                     double target_x = 30;
-                    float interval = 2;
+                    float interval = 1;
                     
                     // update car parameters with measurement
                     ego.s = car_s;
@@ -380,7 +380,7 @@ int main() {
                     // set the predicted lane as from fsm
 
                     //keep lane if no improvment in velocity
-                    if (ego.v*2.4 - car_speed > 0.5){
+                    if (abs(ego.v*2.4 - car_speed) > 0.3){
                         lane = ego.lane;
                     }else{
                         cout<<"keeping lane"<<endl;
@@ -390,7 +390,7 @@ int main() {
                         too_close = true;
                     }
                     
-                    lane = ego.lane;
+                   
                     
                     
                     vector<double> next_x_vals;
@@ -498,7 +498,7 @@ int main() {
                     }*/
                     
                     // Start with all the previuos path points
-                    for(int i = 0; i< previous_path_x.size(); i++)
+                    for(int i = 0; i< no_points; i++)
                     {
                         next_x_vals.push_back(previous_path_x[i]);
                         next_y_vals.push_back(previous_path_y[i]);
