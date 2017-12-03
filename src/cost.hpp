@@ -19,9 +19,9 @@ float calculate_cost(Vehicle vehicle, map<int, vector<Vehicle>> predictions, vec
 
 float goal_distance_cost(Vehicle vehicle, vector<Vehicle> trajectory, map<int, vector<Vehicle>> predictions, map<string, float> data);
 
-float inefficiency_cost(Vehicle vehicle, vector<Vehicle> trajectory, map<int, vector<Vehicle>> predictions, map<string, float> data);
+double inefficiency_cost(Vehicle vehicle, vector<Vehicle> trajectory, map<int, vector<Vehicle>> predictions, map<string, float> data);
 
-float lane_speed(map<int, vector<Vehicle>> predictions, int lane);
+double lane_speed(map<int, vector<Vehicle>> predictions, int lane);
 
 map<string, float> get_helper_data(Vehicle vehicle, vector<Vehicle> trajectory, map<int, vector<Vehicle>> predictions);
 

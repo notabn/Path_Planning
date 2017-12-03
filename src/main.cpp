@@ -8,12 +8,17 @@
 #include <map>
 #include "Eigen-3.3/Eigen/Core"
 #include "Eigen-3.3/Eigen/QR"
+#include "Eigen-3.3/Eigen/Dense"
 #include "json.hpp"
 #include "spline.h"
 #include "vehicle.hpp"
 
 
+
 using namespace std;
+
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
 // for convenience
 using json = nlohmann::json;
@@ -171,6 +176,58 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s, const vec
     
 }
 
+// TODO - complete this function
+vector<double> JMT(vector< double> start, vector <double> end, double T)
+{
+    /*
+     Calculate the Jerk Minimizing Trajectory that connects the initial state
+     to the final state in time T.
+     
+     INPUTS
+     
+     start - the vehicles start location given as a length three array
+     corresponding to initial values of [s, s_dot, s_double_dot]
+     
+     end   - the desired end state for vehicle. Like "start" this is a
+     length three array.
+     
+     T     - The duration, in seconds, over which this maneuver should occur.
+     
+     OUTPUT
+     an array of length 6, each value corresponding to a coefficent in the polynomial
+     s(t) = a_0 + a_1 * t + a_2 * t**2 + a_3 * t**3 + a_4 * t**4 + a_5 * t**5
+     
+     EXAMPLE
+     
+     > JMT( [0, 10, 0], [10, 10, 0], 1)
+     [0.0, 10.0, 0.0, 0.0, 0.0, 0.0]
+     */
+    
+    MatrixXd A = MatrixXd(3, 3);
+    A << T*T*T, T*T*T*T, T*T*T*T*T,
+    3*T*T, 4*T*T*T,5*T*T*T*T,
+    6*T, 12*T*T, 20*T*T*T;
+    
+    MatrixXd B = MatrixXd(3,1);
+    B << end[0]-(start[0]+start[1]*T+.5*start[2]*T*T),
+    end[1]-(start[1]+start[2]*T),
+    end[2]-start[2];
+    
+    MatrixXd Ai = A.inverse();
+    
+    MatrixXd C = Ai*B;
+    
+    vector <double> result = {start[0], start[1], .5*start[2]};
+    for(int i = 0; i < C.size(); i++)
+    {
+        result.push_back(C.data()[i]);
+    }
+    
+    return result;
+    
+}
+
+
 int main() {
     uWS::Hub h;
     
@@ -191,7 +248,7 @@ int main() {
     int lane = 1;
     
     
-    Vehicle ego = Vehicle(lane, 0, 0, 0);
+    Vehicle ego = Vehicle(lane,0, 0, 0, 0);
     ego.configure(max_s, max_acc,0);
     
     
@@ -244,12 +301,18 @@ int main() {
                     double car_yaw = j[1]["yaw"];
                     double car_speed = j[1]["speed"];
                     
+                    //parameters
+                    int horizon = 20;
+                    double target_x = 30;
+                    float interval = 2;
                     
-                    int horizon = 15;
-                    double target_x = 25;
-                    
+                    // update car parameters with measurement
                     ego.s = car_s;
+                    ego.d = car_d;
                     ego.v = car_speed/2.24; // [m/s]
+                    
+                    
+                    
                     // Previous path data given to the Planner
                     auto previous_path_x = j[1]["previous_path_x"];
                     auto previous_path_y = j[1]["previous_path_y"];
@@ -292,22 +355,41 @@ int main() {
                         }
                         int id = sensor_fusion[i][0];
                         int check_lane = floor(d/4);
-                        if( (0 <= check_lane) && (check_lane<=2)){
+                        //cout <<" d is "<< d;
+                        //cout <<" lane is "<< check_lane<<endl;
+                        //if( (0 <= check_lane) && (check_lane<=2)){
                             //cout<<"car id "<<id<<" lane "<<check_lane<<" speed "<<check_speed<<endl;
-                            Vehicle car_on_road = Vehicle(check_lane, sensor_fusion[i][5], check_speed, 0);
-                            car_on_road.prev_points = prev_size;
+                            Vehicle car_on_road = Vehicle(check_lane, sensor_fusion[i][5],d, check_speed, 0);
+                            
+                            car_on_road.dt = interval;
                             car_on_road.configure(6945.554, 10,check_lane);
-                            predictions[id] = car_on_road.generate_predictions(2);
-                        }
+                            vector<Vehicle>  pred = car_on_road.generate_predictions(2);
+                        cout<<"prediction id"<< id <<" lane "<<pred[0].lane<<" speed "<<pred[0].v<<endl;
+                        
+                        predictions[id] =pred ;
+                        //}
                     }
                     // ego predictions
                     //predictions[-1] = ego.generate_predictions();
+                    ego.dt = interval;
                     vector<Vehicle> trajectory =  ego.choose_next_state(predictions);
                     ego.realize_next_state(trajectory);
                     cout<<"-----------------"<<endl;
                     cout<<"next state "<<ego.state<<endl;
                     cout<<"next lane "<<ego.lane<<endl;
                     // set the predicted lane as from fsm
+
+                    //keep lane if no improvment in velocity
+                    if (ego.v*2.4 - car_speed > 0.5){
+                        lane = ego.lane;
+                    }else{
+                        cout<<"keeping lane"<<endl;
+                    }
+                    
+                    if(abs(lane-ego.lane)>0){
+                        too_close = true;
+                    }
+                    
                     lane = ego.lane;
                     
                     
@@ -354,9 +436,9 @@ int main() {
                         ptsy.push_back(ref_y);
                     }
                     
-                    vector<double> next_wp0 = getXY(car_s+20, 2+(4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
-                    vector<double> next_wp1 = getXY(car_s+35, 2+(4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
-                    vector<double> next_wp2 = getXY(car_s+40, 2+(4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+                    vector<double> next_wp0 = getXY(car_s+30, 2+(4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+                    vector<double> next_wp1 = getXY(car_s+60, 2+(4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+                    vector<double> next_wp2 = getXY(car_s+90, 2+(4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
                     
                     ptsx.push_back(next_wp0[0]);
                     ptsx.push_back(next_wp1[0]);
@@ -387,12 +469,12 @@ int main() {
                     
                     
                     
-                    // Start with all the previuos path points
-                    for(int i = 0; i< previous_path_x.size(); i++)
-                    {
-                        next_x_vals.push_back(previous_path_x[i]);
-                        next_y_vals.push_back(previous_path_y[i]);
-                    }
+                    int no_points = previous_path_x.size();
+                    
+                    //no_points = min(no_points,3);
+                    
+                    
+
                     
                     
                     //calculate how to break up target speed
@@ -403,31 +485,58 @@ int main() {
                     // Fill up the rest of the path planner
                     double x_add_on = 0;
                     
-                    cout<<"ego speed "<<ego.v*2.24<<endl;
-                    
-                    float ego_v = ego.v*2.24;
-                    bool increment = true;
-                    if ( ego_v < 49.5 && (abs(car_speed-ego_v)/dt<.224)){
-                        
-                        
-                        ref_vel = ego_v;
-                        increment = false;
-                        
-                    }
-                    
                    
                     
-                    for( int i = 0; i< horizon  - previous_path_x.size();i++){
+                    double ego_v = ego.v*2.24;
+                    cout<<"ego speed "<<ego_v<<endl;
+                    /*if ( ego_v < 49.5 && (abs(car_speed-ego_v)/dt<.224)){
                         
-                        if (too_close && increment){
-                            ref_vel -= .224;
-                        }else if(ref_vel < 49.5 && increment){
+                         cout<<"keeping veloicty"<<endl;
+                        ref_vel = ego_v;
+                        too_close = true;
+                        
+                    }*/
+                    
+                    // Start with all the previuos path points
+                    for(int i = 0; i< previous_path_x.size(); i++)
+                    {
+                        next_x_vals.push_back(previous_path_x[i]);
+                        next_y_vals.push_back(previous_path_y[i]);
+                    }
+                    
+                    double needed_acc = (ref_vel-car_speed)/dt/no_points;
+                    
+                    if (needed_acc > 0.224 && car_speed > 49 && car_speed < 49.5){
+                        cout<<"exceeding acceleration!!!"<<endl;
+                        too_close = true;
+                       // ref_vel = car_speed;
+                    }
+                   
+
+
+                    
+                    for( int i = 0; i< horizon  - no_points;i++){
+                        
+                        if (too_close || (ref_vel > ego_v)){
+                            ref_vel -= .224/2;
+                        }else if(ref_vel < 49.5  && (ref_vel < ego_v)){
                             ref_vel += .224;
+                            /*float acc_step = (car_speed-ref_vel)/dt;
+                             
+                             if (acc_step > 0.224){
+                             ref_vel = car_speed +.224;
+                             }
+                             car_speed = ref_vel;
+                             */
                         }
                         
-                        // d = v*dt*N
-                        double N = (target_dist/(dt * ref_vel/2.24));
 
+                        
+
+                            
+                        // d = v*dt*N
+                        double N = (target_dist/(0.02 * ref_vel/2.24));
+                        
 
                         double x_point = x_add_on + (target_x/N);
                         double y_point = s(x_point);
