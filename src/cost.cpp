@@ -22,7 +22,7 @@ const float VEHICLE_RADIUS = 10;
 const float BUFFER =  0;
 const float JERK =   pow(10,7);
 const float ACC =  pow(10,7);
-const int COLLISION_BUFFER = 15;
+const int COLLISION_BUFFER = 10;
 
 /*
  Here we have provided two possible suggestions for cost functions, but feel free to use your own!

@@ -302,7 +302,7 @@ int main() {
                     double car_speed = j[1]["speed"];
                     
                     //parameters
-                    int horizon = 30;
+                    int horizon = 25;
                     double target_x = 30;
                     float interval = 1;
                     
