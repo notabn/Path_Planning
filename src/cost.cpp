@@ -17,7 +17,7 @@
 //TODO: change weights for cost functions.
 const float REACH_GOAL = pow(10,5);
 const float EFFICIENCY = pow(10,6);
-const float COLLISION = 0;
+const float COLLISION = pow(10,7);
 const float VEHICLE_RADIUS = 1.5;
 const float BUFFER =  0;
 const float JERK =   0;
@@ -117,7 +117,7 @@ double inefficiency_cost(Vehicle vehicle, vector<Vehicle> trajectory, map<int, v
      Cost becomes higher for trajectories with intended lane and final lane that have slower traffic.
      */
 
-    double proposed_speed_intended = lane_speed(predictions, data["intended_lane"]);
+    double proposed_speed_intended = lane_speed(predictions, data["intended_lane"],trajectory[0].s);
     cout<<"intended lane "<<data["intended_lane"]<<" speed_intended "<<proposed_speed_intended<<endl;
     
     if (proposed_speed_intended <=0){
@@ -125,7 +125,7 @@ double inefficiency_cost(Vehicle vehicle, vector<Vehicle> trajectory, map<int, v
     }
 
     
-    double proposed_speed_final = lane_speed(predictions,data["final_lane"]);
+    double proposed_speed_final = lane_speed(predictions,data["final_lane"],trajectory[1].s);
     cout<<" final lane "<<data["final_lane"]<<" proposed_speed_final "<<proposed_speed_final<<endl;
     //cout<<"speed_final "<<proposed_speed_final<<endl;
     if (proposed_speed_final <=0){
@@ -138,22 +138,27 @@ double inefficiency_cost(Vehicle vehicle, vector<Vehicle> trajectory, map<int, v
     return cost;
 }
 
-double lane_speed(map<int, vector<Vehicle>> predictions, int lane) {
+double lane_speed(map<int, vector<Vehicle>> predictions, int lane, double s) {
     /*
-     All non ego vehicles in a lane have the same speed, so to get the speed limit for a lane,
-     we can just find one vehicle in that lane.
+     Get the speed of the vehicle in right in front (nearest)
      */
+    double s_min = pow(10,5);
+    double vel = -1.0;
+    
     for (map<int, vector<Vehicle>>::iterator it = predictions.begin(); it != predictions.end(); ++it) {
         int key = it->first;
         Vehicle vehicle = it->second[0];
-        
-        if (vehicle.lane == lane && key != -1) {
+        if (vehicle.lane == lane && key != -1 && vehicle.s > s) {
             //cout<<"id "<<key<<"lane "<<vehicle.lane<<" speed "<<vehicle.v<<endl;
-            return vehicle.v;
+            if (vehicle.s < s_min){
+                s_min = vehicle.s;
+                vel = vehicle.v;
+            }
+            
         }
     }
-    //Found no vehicle in the lane
-    return -1.0;
+    return vel;
+
 }
 
 float calculate_cost(Vehicle vehicle, map<int, vector<Vehicle>> predictions, vector<Vehicle> trajectory) {
