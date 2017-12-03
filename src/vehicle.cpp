@@ -312,7 +312,7 @@ vector<Vehicle> Vehicle::generate_predictions(int horizon) {
     
     
     double next_v = (next_s - this->s)/this->dt;
-    cout<<"prev_v "<<prev_v<<" next "<<next_v<<endl;
+    //cout<<"prev_v "<<prev_v<<" next "<<next_v<<endl;
     
     next_v = min(next_v,this->target_speed);
     

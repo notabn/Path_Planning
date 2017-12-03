@@ -302,7 +302,7 @@ int main() {
                     double car_speed = j[1]["speed"];
                     
                     //parameters
-                    int horizon = 20;
+                    int horizon = 30;
                     double target_x = 30;
                     float interval = 2;
                     
@@ -364,7 +364,7 @@ int main() {
                             car_on_road.dt = interval;
                             car_on_road.configure(6945.554, 10,check_lane);
                             vector<Vehicle>  pred = car_on_road.generate_predictions(2);
-                        cout<<"prediction id"<< id <<" lane "<<pred[0].lane<<" speed "<<pred[0].v<<endl;
+                        //cout<<"prediction id"<< id <<" lane "<<pred[0].lane<<" speed "<<pred[0].v<<endl;
                         
                         predictions[id] =pred ;
                         //}
@@ -517,7 +517,7 @@ int main() {
                     
                     for( int i = 0; i< horizon  - no_points;i++){
                         
-                        if (too_close || (ref_vel > ego_v)){
+                        if (too_close && (ref_vel > ego_v)){
                             ref_vel -= .224/2;
                         }else if(ref_vel < 49.5  && (ref_vel < ego_v)){
                             ref_vel += .224;
