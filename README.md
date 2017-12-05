@@ -52,3 +52,16 @@ the path has processed since last time.
 ["sensor_fusion"] A 2d vector of cars and then that car's [car's unique ID, car's x position in map coordinates, car's y position in map coordinates, car's x velocity in m/s, car's y velocity in m/s, car's s position in frenet coordinates, car's d position in frenet coordinates. 
 
 
+#### Path planner
+
+The path planner algorthmus consists out of the followig steps:
+
+Objects for the ego and other vehicles .Localization infos  and a kinematic model of the vehicle are stucture in the 'Vehicle' class. Vehicle objects are instanciated from sensor information.
+
+Tracjectories of the sensed objects are generated in the generate_prediction....
+
+Ego possible actions are modeled as a state machine 
+
+The actions are evaluated with the cost function like ...   Determine best trajectory
+
+Generate path along the best trajectory
