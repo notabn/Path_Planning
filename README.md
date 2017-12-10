@@ -62,5 +62,5 @@ The desired state generator used here consists of the following steps:
 
 - Ego possible actions are modeled as a state machine ìn the `Vehicle::successor_states` method. These state along with the trajectories of the other cars are evaluated by the cost functions in `Cost::calculate_cost`. The ego desired trajectory is the state with the smallest cost.
 
-The desired state generator is called in `main.cpp` to  predict the next lane and the speed for the ego car to follow on every message received from the socket. Next, a trajectory is generated as a `spline` based on previuos path points and points in 30, 60 and 90 m in the next desired lane. A set of 28 points are generated according to the desired velocity along the spline in the lines.
+The desired state generator is called in `main.cpp` to  predict the next lane and the speed for the ego car to follow on every message received from the socket. Next, a trajectory is generated as a `spline` based on previuos path points and points in 30, 60 and 90 m in the next desired lane. A set of 28 points are generated according to the desired velocity along the spline in the lines and passed on as the path to follow for the ego in the next step.
    
