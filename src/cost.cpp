@@ -20,9 +20,9 @@ const float EFFICIENCY = pow(10,6);
 const float COLLISION = pow(10,8);
 const float VEHICLE_RADIUS = 10;
 const float BUFFER =  0;
-const float JERK =   pow(10,7);
-const float ACC =  pow(10,7);
-const int COLLISION_BUFFER = 10;
+const float JERK =   pow(10,8);
+const float ACC =  pow(10,8);
+const int COLLISION_BUFFER = 30;
 
 /*
  Here we have provided two possible suggestions for cost functions, but feel free to use your own!
@@ -44,6 +44,7 @@ float logistic(float x){
 float max_accel_cost(Vehicle vehicle, vector<Vehicle> trajectory, map<int, vector<Vehicle>> predictions, map<string, float> data){
     float a = (trajectory[1].v-vehicle.v)/vehicle.dt;
     if (abs(a) >= vehicle.max_acceleration){
+        cout<<"max acc "<<endl;
         return 1.0;
     }else{
         return 0.0;
@@ -98,8 +99,8 @@ float goal_distance_cost(Vehicle vehicle, vector<Vehicle> trajectory, map<int, v
      */
     
    
-    float cost;
-    float distance = data["distance_to_goal"];
+    double cost;
+    double distance = data["distance_to_goal"];
     if (distance > 0) {
         cost = 1 - 2*exp(-(trajectory[1].lane +trajectory[0].lane - data["intended_lane"] - data["final_lane"]) / distance);
     } else {
@@ -117,21 +118,21 @@ double inefficiency_cost(Vehicle vehicle, vector<Vehicle> trajectory, map<int, v
      */
 
     double proposed_speed_intended = lane_speed(predictions, data["intended_lane"],trajectory[0].s);
-   // cout<<"intended lane "<<data["intended_lane"]<<" speed_intended "<<proposed_speed_intended<<endl;
     
-    if (proposed_speed_intended <=0){
+    
+    if (proposed_speed_intended <= 0){
          proposed_speed_intended = vehicle.target_speed;
     }
 
     
     double proposed_speed_final = lane_speed(predictions,data["final_lane"],trajectory[1].s);
-    //cout<<" final lane "<<data["final_lane"]<<" proposed_speed_final "<<proposed_speed_final<<endl;
-    //cout<<"speed_final "<<proposed_speed_final<<endl;
+    
     if (proposed_speed_final <=0){
         proposed_speed_final = vehicle.target_speed;
     }
-  
-   
+    //cout<<" final lane "<< trajectory[0].lane<<" proposed_speed_final "<<proposed_speed_final<<endl;
+    //cout<<"intended lane "<< trajectory[1].lane<<" speed_intended "<<proposed_speed_intended<<endl;
+    
     double cost = (2*vehicle.target_speed - proposed_speed_intended-proposed_speed_final)/vehicle.target_speed;
     
     return cost;
@@ -145,18 +146,19 @@ double lane_speed(map<int, vector<Vehicle>> predictions, int lane, double s) {
     double vel = -1.0;
     
     for (map<int, vector<Vehicle>>::iterator it = predictions.begin(); it != predictions.end(); ++it) {
+        Vehicle temp = it->second[0];
         int key = it->first;
-        Vehicle vehicle = it->second[0];
-        if (vehicle.lane == lane && key != -1 ) {
+        if (temp.lane == lane && key != -1) {
             //cout<<"id "<<key<<"lane "<<vehicle.lane<<" speed "<<vehicle.v<<endl;
-            double delta = abs(vehicle.s-s);
-            if (delta < ds_min){
-                ds_min = vehicle.s;
-                vel = vehicle.v;
+            double delta = fabs(temp.s-s);
+            if (delta < ds_min && delta< 100 && temp.s > s ){
+                ds_min = delta;
+                vel = temp.v;
             }
             
         }
     }
+    cout <<"vel "<<vel<<endl;
     return vel;
 
 }
@@ -167,14 +169,14 @@ float calculate_cost(Vehicle vehicle, map<int, vector<Vehicle>> predictions, vec
      */
 
     map<string, float> trajectory_data = get_helper_data(vehicle, trajectory, predictions);
-    float cost = 0.0;
+    double cost = 0.0;
     
     //Add additional cost functions here.
     vector< function<float(Vehicle, vector<Vehicle>, map<int, vector<Vehicle>>, map<string, float>)>> cf_list = {inefficiency_cost,goal_distance_cost,collision_cost,buffer_cost,max_accel_cost,max_jerk_cost};
     vector<float> weight_list = {EFFICIENCY,REACH_GOAL,COLLISION,BUFFER,ACC,JERK};
     
     for (int i = 0; i < cf_list.size(); i++) {
-        float new_cost = weight_list[i]*cf_list[i](vehicle, trajectory, predictions, trajectory_data);
+        double new_cost = weight_list[i]*cf_list[i](vehicle, trajectory, predictions, trajectory_data);
         cost += new_cost;
     }
     //cout <<"cost is"<<cost;
