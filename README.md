@@ -54,14 +54,13 @@ the path has processed since last time.
 
 ## Path planner
 
-The path planner algorithm consists of the followig steps:
+The desired state generator used here consists of the following steps:
 
-Objects for the ego and other vehicles .Localization infos  and a kinematic model of the vehicle are stucture in the 'Vehicle' class. Vehicle objects are instanciated from sensor information.
+- Localization information and a kinematic model of the vehicle are stuctured in the `Vehicle` class. `Vehicle objects are instanciated from sensor information for the ego and the other sensed cars.
 
-Tracjectories of the sensed objects are generated in the generate_prediction....
+- Trajectories of the sensed vehicles are the output of the `Vehicle::generate_trajectory` method. 
 
-Ego possible actions are modeled as a state machine 
+- Ego possible actions are modeled as a state machine ìn the `Vehicle::successor_states` method. These state along with the trajectories of the other cars are evaluated by the cost functions in `Cost::calculate_cost`. The ego desired trajectory is the state with the smallest cost.
 
-The actions are evaluated with the cost function like ...   Determine best trajectory
-
-Generate path along the best trajectory
+The desired state generator is called in `main.cpp` to  predict the next lane and the speed for the ego car to follow on every message received from the socket. Next, a trajectory is generated as a `spline` based on previuos path points and points in 30, 60 and 90 m in the next desired lane. A set of 28 points are generated according to the desired velocity along the spline in the lines.
+   
