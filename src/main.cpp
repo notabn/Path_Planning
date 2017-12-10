@@ -384,7 +384,7 @@ int main() {
                     }
 
                     //keep lane if no improvement in velocity
-                    if (abs(ego.v*2.4 - car_speed) > 0.2){
+                    if (abs(ego.v*2.4 - car_speed) > 0.3){
                         lane = ego.lane;
                     }else{
                         cout<<"keeping lane"<<endl;
@@ -515,10 +515,11 @@ int main() {
                         //adapt_speed = true;
                         ref_vel = car_speed;
                     }*/
+
                     
                     for( int i = 0; i< horizon  - no_points;i++){
                         
-                        if (too_close || adapt_speed ){
+                        if (too_close || adapt_speed){
                             ref_vel -= .224/2;
                         }else if(ref_vel < 49.5  && (ref_vel < ego_v)){
                             ref_vel += .224;

@@ -2,7 +2,7 @@
 //  vehicle.cpp
 //  Behavioural Planner
 //
-//  Copyright © 2017 Natalia Balcu. All rights reserved.
+//  Adapted vehicle class from Udacity
 //
 
 #include "vehicle.hpp"

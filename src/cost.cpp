@@ -2,8 +2,8 @@
 //  cost.cpp
 //  Behavioural Planner
 //
-//  Copyright © 2017 Natalia Balcu. All rights reserved.
-//
+//  Adapted cost class from Udacity
+//  
 
 #include "cost.hpp"
 #include "vehicle.hpp"
@@ -158,7 +158,7 @@ double lane_speed(map<int, vector<Vehicle>> predictions, int lane, double s) {
             
         }
     }
-    cout <<"vel "<<vel<<endl;
+    //cout <<"vel "<<vel<<endl;
     return vel;
 
 }

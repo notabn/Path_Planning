@@ -2,9 +2,8 @@
 //  cost.hpp
 //  Behavioural Planner
 //
-//  Created by Emil Balcu on 12.11.17.
-//  Copyright © 2017 Natalia Balcu. All rights reserved.
-//
+//  Adapted cost class from Udacity
+
 
 #ifndef cost_hpp
 #define cost_hpp
