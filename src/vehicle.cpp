@@ -63,8 +63,8 @@ vector<Vehicle> Vehicle::choose_next_state(map<int, vector<Vehicle>> predictions
     vector<string> states = successor_states();
     
     
-    float cost;
-    vector<float> costs;
+    double cost;
+    vector<double> costs;
     vector<string> final_states;
     vector<vector<Vehicle>> final_trajectories;
     
@@ -82,7 +82,7 @@ vector<Vehicle> Vehicle::choose_next_state(map<int, vector<Vehicle>> predictions
         }
     }
     
-    vector<float>::iterator best_cost = min_element(begin(costs), end(costs));
+    vector<double>::iterator best_cost = min_element(begin(costs), end(costs));
     int best_idx = distance(begin(costs), best_cost);
     return final_trajectories[best_idx];
     
@@ -107,12 +107,14 @@ vector<string> Vehicle::successor_states() {
         if (this->lane > 0 && this->lane <= lanes_available - 1) {
             states.push_back("PLCL");
             states.push_back("LCL");
+            states.push_back("PLCR");
         }
     } else if (state.compare("PLCR") == 0) {
          //if (this->lane != 0) {
          if (this->lane < lanes_available - 1 && this->lane >= 0 ) {
             states.push_back("PLCR");
             states.push_back("LCR");
+             states.push_back("PLCL");
         }
     }
     //If state is "LCL" or "LCR", then just return "KL"
@@ -349,6 +351,6 @@ void Vehicle::configure(int s,float max_acc,int lane) {
     lanes_available = 3;
     goal_s = s;
     goal_lane = lane;
-    max_acceleration = max_acc-1;
+    max_acceleration = max_acc;
 }
 
