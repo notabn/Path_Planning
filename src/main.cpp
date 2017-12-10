@@ -302,9 +302,9 @@ int main() {
                     double car_speed = j[1]["speed"];
                     
                     //parameters
-                    int horizon = 25;
-                    double target_x = 30;
-                    float interval = 1;
+                    int horizon = 40;
+                    double target_x = 25;
+                    float interval = 1.2;
                     
                     // update car parameters with measurement
                     ego.s = car_s;
@@ -378,21 +378,19 @@ int main() {
                     cout<<"next state "<<ego.state<<endl;
                     cout<<"next lane "<<ego.lane<<endl;
                     // set the predicted lane as from fsm
+                    bool adapt_speed = false;
+                    if(abs(lane-ego.lane)>0 && (ego.v < ref_vel)){
+                        adapt_speed = true;
+                    }
 
-                    //keep lane if no improvment in velocity
-                    if (abs(ego.v*2.4 - car_speed) > 0.3){
+                    //keep lane if no improvement in velocity
+                    if (abs(ego.v*2.4 - car_speed) > 0.2){
                         lane = ego.lane;
                     }else{
                         cout<<"keeping lane"<<endl;
                     }
                     
-                    if(abs(lane-ego.lane)>0){
-                        too_close = true;
-                    }
-                    
-                   
-                    
-                    
+
                     vector<double> next_x_vals;
                     vector<double> next_y_vals;
                     
@@ -436,9 +434,12 @@ int main() {
                         ptsy.push_back(ref_y);
                     }
                     
-                    vector<double> next_wp0 = getXY(car_s+30, 2+(4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
-                    vector<double> next_wp1 = getXY(car_s+60, 2+(4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
-                    vector<double> next_wp2 = getXY(car_s+90, 2+(4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+                    int size_pts = ptsx.size();
+                    
+                    vector<double> next_wp0 = getXY(car_s+45, 2+(4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+                    vector<double> next_wp1 = getXY(car_s+50, 2+(4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+                    vector<double> next_wp2 = getXY(car_s+55, 2+(4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+                    
                     
                     ptsx.push_back(next_wp0[0]);
                     ptsx.push_back(next_wp1[0]);
@@ -473,10 +474,7 @@ int main() {
                     
                     //no_points = min(no_points,3);
                     
-                    
 
-                    
-                    
                     //calculate how to break up target speed
                     
                     double target_y = s(target_x);
@@ -504,36 +502,29 @@ int main() {
                         next_y_vals.push_back(previous_path_y[i]);
                     }
                     
-                    double needed_acc = (ref_vel-car_speed)/dt/no_points;
+
+                   
+
+                    /*if (( ego.state.compare("PLCR") == 0 || ego.state.compare("PLCL") == 0) && ref_vel <ego_v)
+                        adapt_speed = true;
+
+                    double needed_acc = (ref_vel-car_speed)/dt;
                     
                     if (needed_acc > 0.224 && car_speed > 49 && car_speed < 49.5){
                         cout<<"exceeding acceleration!!!"<<endl;
-                        too_close = true;
-                       // ref_vel = car_speed;
-                    }
-                   
-
-
+                        //adapt_speed = true;
+                        ref_vel = car_speed;
+                    }*/
                     
                     for( int i = 0; i< horizon  - no_points;i++){
                         
-                        if (too_close && (ref_vel > ego_v)){
+                        if (too_close || adapt_speed ){
                             ref_vel -= .224/2;
                         }else if(ref_vel < 49.5  && (ref_vel < ego_v)){
                             ref_vel += .224;
-                            /*float acc_step = (car_speed-ref_vel)/dt;
-                             
-                             if (acc_step > 0.224){
-                             ref_vel = car_speed +.224;
-                             }
-                             car_speed = ref_vel;
-                             */
+
                         }
-                        
 
-                        
-
-                            
                         // d = v*dt*N
                         double N = (target_dist/(0.02 * ref_vel/2.24));
                         
